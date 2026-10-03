@@ -10,7 +10,7 @@ h1,h2{margin:.2em 0}button{background:var(--pri);color:#fff;border:0;border-radi
 button.g{background:#2d325e}button.y{background:var(--acc);color:#222;font-weight:700}button:disabled{opacity:.4}
 input,textarea{width:100%;background:#0f1226;color:var(--ink);border:1px solid #3a3f78;border-radius:10px;padding:10px;font:inherit;margin:4px 0}
 .timer{font-size:64px;font-weight:800;text-align:center;color:var(--acc)}.c{text-align:center}
-.stage{position:relative;text-align:center}.stage img{width:100%;height:70vh;object-fit:contain;background:#000;border-radius:14px;border:3px solid var(--acc)}
+.stage{position:relative;text-align:center}.stage img{max-width:100%;max-height:50vh;border-radius:14px;border:3px solid var(--acc)}
 .chars{display:flex;justify-content:center;gap:24px;font-size:56px;margin-top:8px}.chars span{display:inline-block;animation:bob 1.6s ease-in-out infinite}
 .chars span:nth-child(2){animation-delay:.4s}.talk span{animation:talk .5s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-8px)}}@keyframes talk{50%{transform:translateY(-14px) rotate(8deg)}}
@@ -127,6 +127,6 @@ window.A={setS,fs(on){if(on&&!(S.phase==='present'&&T['t'+S.cur]?.img))return al
 function render(){
  const a=document.activeElement;if(me&&a&&['ai','pr','ch','im'].includes(a.id))return;
  if(!me){$('app').innerHTML=`<div class="card c"><h1>🎮 AI CHALLENGE</h1><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><button class="y" onclick="A.login()">LOGIN</button><div id="err" class="mut"></div></div>`;return}
- $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v4 · fullscreen</div></div>`;
+ $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v5 · fullscreen</div></div>`;
  if(me.owner&&S.phase==='lobby'&&$('qr')&&!$('qr').firstChild)new QRCode($('qr'),{text:location.href,width:180,height:180});updFS()}
 </script></body></html>
