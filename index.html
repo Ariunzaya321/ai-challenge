@@ -52,8 +52,8 @@ onAuthStateChanged(auth,u=>{
   setInterval(()=>{if(S.phase==='work')render()},1000)}
  render()});
 
-async function login(){const u=$('u').value.trim().toLowerCase(),p=$('p').value;
- try{await signInWithEmailAndPassword(auth,u+DOM,p)}catch(e){$('err').textContent='Нэр эсвэл нууц үг буруу'}}
+async function login(){const u=$('u').value.trim().toLowerCase().split('@')[0],p=$('p').value;
+ try{await signInWithEmailAndPassword(auth,u+DOM,p)}catch(e){$('err').textContent=(e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'||e.code==='auth/user-not-found'||e.code==='auth/invalid-email')?'Нэр эсвэл нууц үг буруу ('+e.code+')':'Алдаа: '+(e.code||e.message)}}
 const setS=p=>setDoc(D('game/state'),{...S,...p});
 function fly(id){const a=document.querySelector('.chars span'),b=document.querySelector('.stage img');if(!a||!b)return;
  const x=a.getBoundingClientRect(),y=b.getBoundingClientRect(),e=document.createElement('div');e.className='fly';e.textContent='⭐';
