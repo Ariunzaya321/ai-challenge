@@ -33,11 +33,11 @@ const firebaseConfig={apiKey:"AIzaSyDEqRhKv2xJb0QF12IAJCi8T0pBo5tsNdk",authDomai
 /* ==================================================== */
 
 const TEAMS=["syngapuriin_hogjil","genomiin_code_tailagch","shudarga_yos","amidral_3.0","toyota_management","analogy_ergej_irsen_","elon_musk","bi_hen_be"];
-const DOM='@challenge.app',EM=['👾','🤖','👩‍🚀','🦄','🐲','🦊','🐼','🐙'];
+const DOM='@challenge.app',EM=['👾','🤖','👩‍🚀','🦄','🐲','🦊','🐼','🐙','🐱','🦁','🐸','🧙','🥷','🦸','🧛','👽'];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const D=p=>doc(db,...p.split('/')),C=p=>collection(db,p);
-let me=null,S={phase:'lobby'},T={},V={},R=null,myVotes={},revealRun=false,revealShown=-1,first=true,subs=false;
-const $=id=>document.getElementById(id),tn=n=>'Team '+n;
+let chosen={},taken={},me=null,S={phase:'lobby'},T={},V={},R=null,myVotes={},revealRun=false,revealShown=-1,first=true,subs=false;
+const CH=n=>chosen[n]||'❔',$=id=>document.getElementById(id),tn=n=>'Team '+n;
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const myTeam=()=>me&&!me.owner?(TEAMS.indexOf(me.name)+1)||null:null;
 
@@ -49,6 +49,7 @@ onAuthStateChanged(auth,u=>{
   onSnapshot(C('teams'),s=>{T={};s.forEach(d=>T[d.id]=d.data());render()});
   onSnapshot(C('voted'),s=>{V={};s.forEach(d=>V[d.id]=1);
    if(!first&&S.phase==='present')s.docChanges().forEach(c=>{if(c.type==='added')fly(c.doc.id)});first=false;render()});
+  onSnapshot(C('chars'),s=>{chosen={};taken={};s.forEach(d=>{const t=+d.data().team;taken[d.id]=t;chosen[t]=EM[+d.id]});render()});
   onSnapshot(D('game/results'),s=>{R=s.exists()?s.data():null;render()});
   setInterval(()=>{if(S.phase==='work')render()},1000)}
  render()});
@@ -65,17 +66,17 @@ const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(
 const voters=()=>Object.keys(V).filter(k=>k.startsWith(S.cur+'_')).length;
 
 function screen(){
- if(S.phase==='lobby')return `<div class="card c"><h2>⏳ Challenge эхлэхийг хүлээж байна</h2><div class="grid">${EM.map((e,i)=>`<div class="t">${e}<br>${tn(i+1)}</div>`).join('')}</div></div>`;
+ if(S.phase==='lobby')return `<div class="card c"><h2>⏳ Challenge эхлэхийг хүлээж байна</h2><div class="grid">${[0,1,2,3,4,5,6,7].map(i=>`<div class="t ${chosen[i+1]?'ok':''}">${CH(i+1)}<br>${tn(i+1)}</div>`).join('')}</div></div>`;
  if(S.phase==='work')return `<div class="card"><div class="c mut">Challenge</div><h2 class="c">${esc(S.challenge)}</h2><div class="timer">⏱ ${fmt(left())}</div>
-  <div class="grid">${EM.map((e,i)=>`<div class="t ${T['t'+(i+1)]?.submitted?'ok':''}">${e} ${tn(i+1)}<br>${T['t'+(i+1)]?.submitted?'✅ илгээсэн':'бүтээж байна'}</div>`).join('')}</div></div>`;
+  <div class="grid">${[0,1,2,3,4,5,6,7].map(i=>`<div class="t ${T['t'+(i+1)]?.submitted?'ok':''}">${CH(i+1)} ${tn(i+1)}<br>${T['t'+(i+1)]?.submitted?'✅ илгээсэн':'бүтээж байна'}</div>`).join('')}</div></div>`;
  if(S.phase==='present'){const t=T['t'+S.cur]||{};
   return `<div class="card stage"><div class="big">TEAM ${S.cur}</div><p class="mut">${esc(S.challenge)}</p>${t.img?`<img src="${t.img}" onclick="A.fs(true)">`:'<p>(зураг алга)</p>'}
-  <div class="chars ${S.voting?'':'talk'}"><span>${EM[S.cur-1]}</span><span>${EM[S.cur%8]}</span></div><div class="mut">AI: ${esc(t.ai)}</div>
+  <div class="chars ${S.voting?'':'talk'}"><span>${CH(S.cur)}</span><span>${CH(S.cur)}</span></div><div class="mut">AI: ${esc(t.ai)}</div>
   <h2>${S.voting?'⭐ VOTING OPEN':'🎤 Танилцуулж байна'}</h2>
-  ${S.voting?`<div class="big">${voters()} / 7 TEAMS VOTED</div><div class="grid">${EM.map((e,i)=>i+1===S.cur?'':`<div class="t ${V[S.cur+'_'+(i+1)]?'ok':''}">${e} T${i+1} ${V[S.cur+'_'+(i+1)]?'✓':''}</div>`).join('')}</div>`:''}</div>`}
+  ${S.voting?`<div class="big">${voters()} / 7 TEAMS VOTED</div><div class="grid">${[0,1,2,3,4,5,6,7].map(i=>i+1===S.cur?'':`<div class="t ${V[S.cur+'_'+(i+1)]?'ok':''}">${CH(i+1)} T${i+1} ${V[S.cur+'_'+(i+1)]?'✓':''}</div>`).join('')}</div>`:''}</div>`}
  if(S.phase==='results'&&R){if(!revealRun){revealRun=true;revealShown=-1;const step=()=>{revealShown++;render();if(revealShown<R.rank.length)setTimeout(step,2500)};setTimeout(step,500)}
   const shown=R.rank.slice(R.rank.length-Math.min(revealShown+1,R.rank.length)).reverse();
-  return `<div class="card c"><h1>🏆 FINAL RESULTS</h1>${shown.map(r=>{const pos=R.rank.indexOf(r)+1,f=pos===1;return `<div class="rank ${f?'first':''}">${f?'🏆 ':''}${pos}-р байр — ${tn(r.t)} ${EM[r.t-1]} <span class="mut">${r.avg.toFixed(2)}</span>${f?'<br>🎉 👩‍🚀 🎉 +10 CLASS POINTS':''}</div>`}).join('')}</div>`}
+  return `<div class="card c"><h1>🏆 FINAL RESULTS</h1>${shown.map(r=>{const pos=R.rank.indexOf(r)+1,f=pos===1;return `<div class="rank ${f?'first':''}">${f?'🏆 ':''}${pos}-р байр — ${tn(r.t)} ${CH(r.t)} <span class="mut">${r.avg.toFixed(2)}</span>${f?'<br>🎉 👩‍🚀 🎉 +10 CLASS POINTS':''}</div>`}).join('')}</div>`}
  return '<div class="card c">…</div>'}
 
 function admin(){
@@ -89,7 +90,8 @@ function admin(){
 
 function leader(){const n=myTeam();
  if(!n)return '<div class="card">Энэ хэрэглэгч ямар ч багтай холбогдоогүй байна.</div>';
- const t=T['t'+n]||{};let h=`<div class="card"><h2>Welcome, Team ${n} Leader! ${EM[n-1]}</h2>`;
+ const t=T['t'+n]||{};let h=`<div class="card"><h2>Welcome, Team ${n} Leader! ${CH(n)}</h2>`;
+ if(!chosen[n]&&(S.phase==='lobby'||S.phase==='work'))h+=`<p class="big">Багийнхаа дүрийг сонгоно уу</p><p class="mut">Нэг дүрийг зөвхөн нэг баг сонгоно. Сонгосноо өөрчилж болохгүй.</p><div class="grid">${EM.map((e,i)=>`<button class="g" ${taken[i]!==undefined?'disabled':''} style="font-size:34px" onclick="A.pickChar(${i})">${e}</button>`).join('')}</div>`;
  if(S.phase==='lobby')h+='<p>Challenge эхлэхийг хүлээнэ үү…</p>';
  if(S.phase==='work'){if(t.submitted)h+=`<div class="big">✅ Team ${n} submission received!</div>`;
   else if(left()===0)h+='<p>Хугацаа дууссан.</p>';
@@ -104,11 +106,12 @@ const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.m
 
 let fsOn=false;
 function updFS(){const e=$('fs');if(!e)return;if(fsOn&&S.phase==='present'&&T['t'+S.cur]?.img){e.style.display='flex';
-  e.innerHTML=`<img src="${T['t'+S.cur].img}"><div class="bar">TEAM ${S.cur} ${EM[S.cur-1]}${S.voting?' · ⭐ VOTING OPEN · '+voters()+' / 7':''} <span style="opacity:.5">(хаахын тулд дарна)</span></div>`}
+  e.innerHTML=`<img src="${T['t'+S.cur].img}"><div class="bar">TEAM ${S.cur} ${CH(S.cur)}${S.voting?' · ⭐ VOTING OPEN · '+voters()+' / 7':''} <span style="opacity:.5">(хаахын тулд дарна)</span></div>`}
  else{e.style.display='none';if(S.phase!=='present')fsOn=false}}
-window.A={setS,fs(on){if(on&&!(S.phase==='present'&&T['t'+S.cur]?.img))return alert('Одоогоор харуулах зураг алга (Presentation эхлээгүй эсвэл тус баг зураг илгээгээгүй).');fsOn=on;if(on&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen();updFS()},
+window.A={setS,
+ async pickChar(i){const n=myTeam();if(chosen[n])return;try{await setDoc(D('chars/'+i),{team:String(n)})}catch(e){alert('Энэ дүрийг өөр баг аль хэдийн сонгосон байна. Өөрийг сонгоно уу.')}},fs(on){if(on&&!(S.phase==='present'&&T['t'+S.cur]?.img))return alert('Одоогоор харуулах зураг алга (Presentation эхлээгүй эсвэл тус баг зураг илгээгээгүй).');fsOn=on;if(on&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen();updFS()},
  pick(k){myVotes[S.cur]=k;render()},
- startC(){return setS({phase:'work',challenge:$('ch').value,deadline:Date.now()+20*60000})},
+ startC(){return setS({phase:'work',challenge:$('ch').value,deadline:Date.now()+10*60000})},
  nextT(){return S.cur<8?setS({cur:S.cur+1,voting:false}):setS({voting:false})},
  async submitF(){const n=myTeam(),f=$('im').files[0],ai=$('ai').value.trim(),pr=$('pr').value.trim();
   if(!f||!ai||!pr)return alert('AI, prompt, зураг гурвуулаа шаардлагатай');
@@ -120,13 +123,13 @@ window.A={setS,fs(on){if(on&&!(S.phase==='present'&&T['t'+S.cur]?.img))return al
   const rank=[1,2,3,4,5,6,7,8].map(t=>({t,avg:cnt['t'+t]?sum['t'+t]/cnt['t'+t]:0})).sort((a,b)=>b.avg-a.avg);
   await setDoc(D('game/results'),{rank});revealRun=false;await setS({phase:'results'})},
  async reset(){if(!confirm('Бүх өгөгдлийг цэвэрлэх үү?'))return;
-  for(const c of ['teams','voted','votes'])for(const d of (await getDocs(C(c))).docs)await deleteDoc(d.ref);
+  for(const c of ['teams','voted','votes','chars'])for(const d of (await getDocs(C(c))).docs)await deleteDoc(d.ref);
   await deleteDoc(D('game/results'));revealRun=false;await setS({phase:'lobby'})},
  login,out:()=>signOut(auth)};
 
 function render(){
  const a=document.activeElement;if(me&&a&&['ai','pr','ch','im'].includes(a.id))return;
  if(!me){$('app').innerHTML=`<div class="card c"><h1>🎮 AI CHALLENGE</h1><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><button class="y" onclick="A.login()">LOGIN</button><div id="err" class="mut"></div></div>`;return}
- $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v5 · fullscreen</div></div>`;
+ $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v6 · fullscreen</div></div>`;
  if(me.owner&&S.phase==='lobby'&&$('qr')&&!$('qr').firstChild)new QRCode($('qr'),{text:location.href,width:180,height:180});updFS()}
 </script></body></html>
