@@ -56,7 +56,7 @@ onAuthStateChanged(auth,u=>{
    if(!first&&S.phase==='present')s.docChanges().forEach(c=>{if(c.type==='added')fly(c.doc.id)});first=false;render()});
   onSnapshot(C('chars'),s=>{chosen={};taken={};s.forEach(d=>{const t=+d.data().team;taken[d.id]=t;chosen[t]=EM[+d.id]});render()});
   onSnapshot(D('game/results'),s=>{R=s.exists()?s.data():null;render()});
-  setInterval(()=>{if(S.phase==='work')render()},1000)}
+  setInterval(()=>{if(S.phase==='work')render();else if(S.phase==='present'){const e=$('tm');if(e)e.textContent='⏱ '+tmText();if(me.owner)autoStep()}},1000)}
  render()});
 
 async function login(){const u=$('u').value.trim().toLowerCase().split('@')[0],p=$('p').value;
@@ -77,7 +77,7 @@ function screen(){
  if(S.phase==='present'){const t=T['t'+S.cur]||{};
   return `<div class="card stage"><div class="big">${tn(S.cur)}</div><p class="mut">${esc(S.challenge)}</p>${t.img?`<img src="${t.img}" onclick="A.fs(true)">`:'<p>(зураг алга)</p>'}
   <div class="chars ${S.voting?'':'talk'}"><span>${CH(S.cur)}</span><span>${CH(S.cur)}</span></div><div class="mut">AI: ${esc(t.ai)}</div>
-  <h2>${S.voting?'⭐ VOTING OPEN':'🎤 Танилцуулж байна'}</h2>
+  <h2>${S.voting?'⭐ VOTING OPEN':S.closed?'✅ Voting хаагдлаа':'🎤 Танилцуулж байна'}</h2>${S.closed?'':`<div class="timer" id="tm">⏱ ${tmText()}</div>`}
   ${S.voting?`<div class="big">${voters()} / 7 TEAMS VOTED</div><div class="grid">${[0,1,2,3,4,5,6,7].map(i=>i+1===S.cur?'':`<div class="t ${V[S.cur+'_'+(i+1)]?'ok':''}">${CH(i+1)} ${tn(i+1)} ${V[S.cur+'_'+(i+1)]?'✓':''}</div>`).join('')}</div>`:''}</div>`}
 if(S.phase==='results'&&R){const k=Math.min(S.revealStep||0,R.rank.length);const shown=R.rank.slice(R.rank.length-k).reverse();
   const rows=shown.map(r=>{const pos=R.rank.indexOf(r)+1;
@@ -90,8 +90,8 @@ function admin(){
  const b=(l,f,c='')=>`<button class="${c}" onclick="${f}">${l}</button>`;
  let h=`<div class="card"><h2>👨‍🏫 Админ</h2>`;
  if(S.phase==='lobby')h+=`<input id="ch" value="2050 оны Монголын сургууль">${b('START CHALLENGE','A.startC()','y')}<p class="mut">Хүүхдүүд QR уншуулж орно:</p><div id="qr"></div>`;
- if(S.phase==='work')h+=`<p>Илгээсэн: ${Object.values(T).filter(t=>t.submitted).length}/8</p>${b('Presentation эхлүүлэх','A.setS({phase:\'present\',cur:1,voting:false})','y')}`;
- if(S.phase==='present')h+=`<p>Одоо: ${tn(S.cur)}</p>${b('🖼️ Зургийг дэлгэц дүүрэн','A.fs(true)','g')}${S.voting?b('Voting хаах'+(S.cur<8?' → '+tn(S.cur+1):''),'A.nextT()','y'):b('Voting нээх','A.setS({voting:true})','y')}${S.cur===8&&!S.voting?b('🏆 REVEAL RESULTS','A.reveal()','y'):''}`;
+ if(S.phase==='work')h+=`<p>Илгээсэн: ${Object.values(T).filter(t=>t.submitted).length}/8</p>${b('Presentation эхлүүлэх (хугацаа дуусаагүй бол эрт хаана)','A.startP()','y')}`;
+ if(S.phase==='present')h+=`<p>Одоо: ${tn(S.cur)} · <span class="mut">танилцуулга ${PRES}с, voting ${VOTE}с (автоматаар)</span></p>${b('🖼️ Зургийг дэлгэц дүүрэн','A.fs(true)','g')}${S.voting?b('Voting эрт хаах','A.closeVote()','y'):S.closed?(S.cur<8?b('Дараагийн баг → '+tn(S.cur+1),'A.nextT()','y'):b('🏆 REVEAL RESULTS','A.reveal()','y')):b('Танилцуулгыг дуусгаж voting нээх','A.openVote()','y')}`;
  if(S.phase==='results')h+=b('Шинээр эхлэх (reset)','A.reset()','g');
  return h+'</div>'}
 
@@ -104,13 +104,22 @@ function leader(){const n=myTeam();
   else if(left()===0)h+='<p>Хугацаа дууссан.</p>';
   else h+=`<input id="ai" placeholder="Ямар AI ашигласан бэ?"><textarea id="pr" rows="4" placeholder="Prompt"></textarea><input type="file" id="im" accept="image/*"><button class="y" onclick="A.submitF()">SUBMIT FINAL</button><p class="mut">Илгээсний дараа өөрчилж болохгүй.</p>`}
  if(S.phase==='present'){if(S.cur===n)h+='<p>Таны багийн танилцуулга. Өөртөө санал өгөхгүй.</p>';
-  else if(!S.voting)h+='<p>Танилцуулгыг сонсоно уу…</p>';
+  else if(!S.voting)h+=S.closed?'<p>Voting хаагдсан.</p>':'<p>Танилцуулгыг сонсоно уу…</p>';
   else if(V[S.cur+'_'+n])h+='<div class="big">✓ Санал өгсөн</div>';
   else h+=`<p>«${tn(S.cur)}» багийн зургийг үнэл:</p><div class="rate">${[1,2,3,4,5].map(k=>`<button class="${myVotes[S.cur]===k?'sel':''}" onclick="A.pick(${k})">${k}</button>`).join('')}</div><button class="y" ${myVotes[S.cur]?'':'disabled'} onclick="A.vote()">⭐ VOTE</button>`}
  return h+'</div>'}
 
 const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1280/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.8))};i.src=URL.createObjectURL(f)});
 
+const PRES=60,VOTE=20;
+const sl=t=>t?Math.max(0,Math.round((t-Date.now())/1000)):0;
+const tmText=()=>S.voting?sl(S.vEnd)+'с':fmt(sl(S.pEnd));
+const openVote=()=>setS({voting:true,closed:false,vEnd:Date.now()+VOTE*1000});
+const closeVote=()=>setS({voting:false,closed:true});
+let stepBusy=false;
+async function autoStep(){if(stepBusy||S.phase!=='present')return;const now=Date.now();
+ try{if(!S.voting&&!S.closed&&S.pEnd&&now>=S.pEnd){stepBusy=true;await openVote()}
+ else if(S.voting&&S.vEnd&&now>=S.vEnd){stepBusy=true;await closeVote()}}finally{stepBusy=false}}
 function runReveal(){if(revTimer||!me||!me.owner)return;revTimer=setInterval(async()=>{
  if(S.phase!=='results'){clearInterval(revTimer);revTimer=null;return}
  const k=S.revealStep||0;if(k>=8){clearInterval(revTimer);revTimer=null;return}
@@ -124,8 +133,10 @@ function updFS(){const e=$('fs');if(!e)return;if(fsOn&&S.phase==='present'&&T['t
 window.A={setS,
  async pickChar(i){const n=myTeam();if(chosen[n])return;try{await setDoc(D('chars/'+i),{team:String(n)})}catch(e){alert('Энэ дүрийг өөр баг аль хэдийн сонгосон байна. Өөрийг сонгоно уу.')}},fs(on){if(on&&!(S.phase==='present'&&T['t'+S.cur]?.img))return alert('Одоогоор харуулах зураг алга (Presentation эхлээгүй эсвэл тус баг зураг илгээгээгүй).');fsOn=on;if(on&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});if(!on&&document.fullscreenElement)document.exitFullscreen();updFS()},
  pick(k){myVotes[S.cur]=k;render()},
- startC(){return setS({phase:'work',challenge:$('ch').value,deadline:Date.now()+10*60000})},
- nextT(){return S.cur<8?setS({cur:S.cur+1,voting:false}):setS({voting:false})},
+ startC(){return setS({phase:'work',challenge:$('ch').value,deadline:Date.now()+7*60000})},
+ startP(){return setS({phase:'present',cur:1,voting:false,closed:false,pEnd:Date.now()+PRES*1000,vEnd:null})},
+ openVote,closeVote,
+ nextT(){return S.cur<8?setS({cur:S.cur+1,voting:false,closed:false,pEnd:Date.now()+PRES*1000,vEnd:null}):null},
  async submitF(){const n=myTeam(),f=$('im').files[0],ai=$('ai').value.trim(),pr=$('pr').value.trim();
   if(!f||!ai||!pr)return alert('AI, prompt, зураг гурвуулаа шаардлагатай');
   if(!confirm('Эцсийн илгээлт. Дараа нь өөрчилж болохгүй.'))return;
@@ -143,6 +154,6 @@ window.A={setS,
 function render(){
  const a=document.activeElement;if(me&&a&&['ai','pr','ch','im'].includes(a.id))return;
  if(!me){$('app').innerHTML=`<div class="card c"><h1>🎮 AI CHALLENGE</h1><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><button class="y" onclick="A.login()">LOGIN</button><div id="err" class="mut"></div></div>`;return}
- $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v8 · fullscreen</div></div>`;
+ $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v9 · fullscreen</div></div>`;
  if(me.owner&&S.phase==='lobby'&&$('qr')&&!$('qr').firstChild)new QRCode($('qr'),{text:location.href,width:180,height:180});updFS();if(S.phase!=='results')cfDone=false;else if(R&&(S.revealStep||0)>=R.rank.length&&!cfDone){cfDone=true;confetti()}}
 </script></body></html>
