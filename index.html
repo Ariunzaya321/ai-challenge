@@ -6,19 +6,23 @@
 :root{--bg:#0f1226;--card:#1b1f3d;--ink:#f3f4ff;--mut:#9aa0d0;--acc:#ffd23f;--pri:#6c5ce7}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;padding:12px}
 .wrap{max-width:900px;margin:auto}.card{background:var(--card);border-radius:16px;padding:16px;margin:12px 0}
-h1,h2{margin:.2em 0}button{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:16px;cursor:pointer;margin:3px}
+h1,h2{margin:.2em 0}h1{font-size:clamp(22px,6vw,30px)}h2{font-size:clamp(17px,4.5vw,22px)}button{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:16px;cursor:pointer;margin:3px}
 button.g{background:#2d325e}button.y{background:var(--acc);color:#222;font-weight:700}button:disabled{opacity:.4}
 input,textarea{width:100%;background:#0f1226;color:var(--ink);border:1px solid #3a3f78;border-radius:10px;padding:10px;font:inherit;margin:4px 0}
-.timer{font-size:64px;font-weight:800;text-align:center;color:var(--acc)}.c{text-align:center}
+.timer{font-size:clamp(40px,13vw,60px);font-weight:800;text-align:center;color:var(--acc)}.c{text-align:center}
 .stage{position:relative;text-align:center}.stage img{max-width:100%;max-height:50vh;border-radius:14px;border:3px solid var(--acc)}
-.chars{display:flex;justify-content:center;gap:24px;font-size:56px;margin-top:8px}.chars span{display:inline-block;animation:bob 1.6s ease-in-out infinite}
+.chars{display:flex;justify-content:center;gap:20px;font-size:44px;margin-top:8px}.chars span{display:inline-block;animation:bob 1.6s ease-in-out infinite}
 .chars span:nth-child(2){animation-delay:.4s}.talk span{animation:talk .5s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(-8px)}}@keyframes talk{50%{transform:translateY(-14px) rotate(8deg)}}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
 .t{background:#0f1226;border-radius:10px;padding:8px;text-align:center;font-size:14px}.t.ok{outline:2px solid #2ecc71}
 .rate button{font-size:22px;min-width:52px}.rate button.sel{background:var(--acc);color:#222}
-.rank{font-size:28px;text-align:center;animation:pop .6s}.rank.first{font-size:48px;color:var(--acc)}
-@keyframes pop{from{transform:scale(.3);opacity:0}}.big{font-size:26px;font-weight:700}
+.rrow{display:flex;align-items:center;gap:12px;background:#0f1226;border-radius:12px;padding:10px 14px;margin:8px 0;animation:pop .5s;text-align:left}
+.rrow .pos{font-size:13px;color:var(--mut);min-width:54px}.rrow .ch{font-size:26px}.rrow .nm{flex:1;font-size:16px;font-weight:600}.rrow .sc{font-size:16px;color:var(--acc);font-weight:700}
+.win{background:linear-gradient(135deg,#3b2f8f,#6c5ce7);border:2px solid var(--acc);border-radius:18px;padding:18px;margin:14px 0;animation:pop .8s}
+.win .ch{font-size:56px}.win .t1{font-size:18px;font-weight:800;color:var(--acc)}.win .msg{font-size:15px;line-height:1.6;margin-top:10px}
+.cf{position:fixed;top:-20px;width:9px;height:14px;z-index:60;pointer-events:none;animation:fall linear forwards}@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@keyframes pop{from{transform:scale(.3);opacity:0}}.big{font-size:19px;font-weight:700}
 .mut{color:var(--mut)}.fly{position:fixed;font-size:32px;z-index:9;pointer-events:none}
 #fs{display:none;position:fixed;inset:0;background:#000;z-index:50;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}#fs img{width:100vw;height:calc(100vh - 70px);object-fit:contain}#fs .bar{color:#fff;font-size:22px;padding:10px;text-align:center}.stage img{cursor:zoom-in}
 #qr{display:inline-block;background:#fff;padding:8px;border-radius:8px}
@@ -36,7 +40,7 @@ const TEAMS=["syngapuriin_hogjil","genomiin_code_tailagch","shudarga_yos","amidr
 const DOM='@challenge.app',EM=['👾','🤖','👩‍🚀','🦄','🐲','🦊','🐼','🐙','🐱','🦁','🐸','🧙','🥷','🦸','🧛','👽'];
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const D=p=>doc(db,...p.split('/')),C=p=>collection(db,p);
-let chosen={},taken={},me=null,S={phase:'lobby'},T={},V={},R=null,myVotes={},revealRun=false,revealShown=-1,first=true,subs=false;
+let chosen={},taken={},me=null,S={phase:'lobby'},T={},V={},R=null,myVotes={},first=true,revTimer=null,cfDone=false,subs=false;
 const CH=n=>chosen[n]||'❔',$=id=>document.getElementById(id),tn=n=>'Team '+n;
 const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const myTeam=()=>me&&!me.owner?(TEAMS.indexOf(me.name)+1)||null:null;
@@ -45,7 +49,7 @@ onAuthStateChanged(auth,u=>{
  if(!u){me=null;render();return}
  const name=u.email.split('@')[0];me={uid:u.uid,name,owner:name==='admin'};
  if(!subs){subs=true;
-  onSnapshot(D('game/state'),s=>{S=s.exists()?s.data():{phase:'lobby'};render()});
+  onSnapshot(D('game/state'),s=>{S=s.exists()?s.data():{phase:'lobby'};if(me.owner&&S.phase==='results'&&(S.revealStep||0)<8)runReveal();render()});
   onSnapshot(C('teams'),s=>{T={};s.forEach(d=>T[d.id]=d.data());render()});
   onSnapshot(C('voted'),s=>{V={};s.forEach(d=>V[d.id]=1);
    if(!first&&S.phase==='present')s.docChanges().forEach(c=>{if(c.type==='added')fly(c.doc.id)});first=false;render()});
@@ -74,9 +78,11 @@ function screen(){
   <div class="chars ${S.voting?'':'talk'}"><span>${CH(S.cur)}</span><span>${CH(S.cur)}</span></div><div class="mut">AI: ${esc(t.ai)}</div>
   <h2>${S.voting?'⭐ VOTING OPEN':'🎤 Танилцуулж байна'}</h2>
   ${S.voting?`<div class="big">${voters()} / 7 TEAMS VOTED</div><div class="grid">${[0,1,2,3,4,5,6,7].map(i=>i+1===S.cur?'':`<div class="t ${V[S.cur+'_'+(i+1)]?'ok':''}">${CH(i+1)} T${i+1} ${V[S.cur+'_'+(i+1)]?'✓':''}</div>`).join('')}</div>`:''}</div>`}
- if(S.phase==='results'&&R){if(!revealRun){revealRun=true;revealShown=-1;const step=()=>{revealShown++;render();if(revealShown<R.rank.length)setTimeout(step,2500)};setTimeout(step,500)}
-  const shown=R.rank.slice(R.rank.length-Math.min(revealShown+1,R.rank.length)).reverse();
-  return `<div class="card c"><h1>🏆 FINAL RESULTS</h1>${shown.map(r=>{const pos=R.rank.indexOf(r)+1,f=pos===1;return `<div class="rank ${f?'first':''}">${f?'🏆 ':''}${pos}-р байр — ${tn(r.t)} ${CH(r.t)} <span class="mut">${r.avg.toFixed(2)}</span>${f?'<br>🎉 👩‍🚀 🎉 +10 CLASS POINTS':''}</div>`}).join('')}</div>`}
+if(S.phase==='results'&&R){const k=Math.min(S.revealStep||0,R.rank.length);const shown=R.rank.slice(R.rank.length-k).reverse();
+  const rows=shown.map(r=>{const pos=R.rank.indexOf(r)+1;
+   if(pos===1)return `<div class="win"><div class="ch">${CH(r.t)}</div><div class="t1">🏆 1-р байр · ${tn(r.t)} · ${r.avg.toFixed(2)}</div><div class="msg">${tn(r.t)} ${CH(r.t)} та 12р долоо хоногийн Инженерийн ёс зүй хичээлийн эргэлтийн цэг багийн ажилбар дээр ялагч болж эргэлтийн цэг багаас 2% үнэлгээ авлаа</div></div>`;
+   return `<div class="rrow"><span class="pos">${pos}-р байр</span><span class="ch">${CH(r.t)}</span><span class="nm">${tn(r.t)}</span><span class="sc">${r.avg.toFixed(2)}</span></div>`}).join('');
+  return `<div class="card c"><h1>🏆 FINAL RESULTS</h1>${k===0?'<p class="mut">Үр дүнг хүлээж байна…</p>':''}${rows}</div>`}
  return '<div class="card c">…</div>'}
 
 function admin(){
@@ -104,6 +110,12 @@ function leader(){const n=myTeam();
 
 const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1280/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.8))};i.src=URL.createObjectURL(f)});
 
+function runReveal(){if(revTimer||!me||!me.owner)return;revTimer=setInterval(async()=>{
+ if(S.phase!=='results'){clearInterval(revTimer);revTimer=null;return}
+ const k=S.revealStep||0;if(k>=8){clearInterval(revTimer);revTimer=null;return}
+ await setS({revealStep:k+1})},2800)}
+function confetti(){const c=['#ffd23f','#6c5ce7','#2ecc71','#ff6b6b','#4dabf7'];for(let i=0;i<70;i++){const e=document.createElement('div');e.className='cf';
+ e.style.left=Math.random()*100+'vw';e.style.background=c[i%5];e.style.animationDuration=(2.5+Math.random()*2.5)+'s';e.style.animationDelay=Math.random()*1.2+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),7000)}}
 let fsOn=false;
 function updFS(){const e=$('fs');if(!e)return;if(fsOn&&S.phase==='present'&&T['t'+S.cur]?.img){e.style.display='flex';
   e.innerHTML=`<img src="${T['t'+S.cur].img}"><div class="bar">TEAM ${S.cur} ${CH(S.cur)}${S.voting?' · ⭐ VOTING OPEN · '+voters()+' / 7':''} <span style="opacity:.5">(хаахын тулд дарна)</span></div>`}
@@ -121,15 +133,15 @@ window.A={setS,
   try{await setDoc(D('votes/'+me.uid),{from:n,v:{['t'+S.cur]:k}},{merge:true});await setDoc(D('voted/'+S.cur+'_'+n),{t:Date.now()})}catch(e){alert('Санал өгч чадсангүй: '+(e.code||e.message))}},
  async reveal(){const sum={},cnt={};(await getDocs(C('votes'))).forEach(d=>{const x=d.data();for(const k in x.v){if('t'+x.from===k)continue;sum[k]=(sum[k]||0)+x.v[k];cnt[k]=(cnt[k]||0)+1}});
   const rank=[1,2,3,4,5,6,7,8].map(t=>({t,avg:cnt['t'+t]?sum['t'+t]/cnt['t'+t]:0})).sort((a,b)=>b.avg-a.avg);
-  await setDoc(D('game/results'),{rank});revealRun=false;await setS({phase:'results'})},
+  await setDoc(D('game/results'),{rank});cfDone=false;await setS({phase:'results',revealStep:0});runReveal()},
  async reset(){if(!confirm('Бүх өгөгдлийг цэвэрлэх үү?'))return;
   for(const c of ['teams','voted','votes','chars'])for(const d of (await getDocs(C(c))).docs)await deleteDoc(d.ref);
-  await deleteDoc(D('game/results'));revealRun=false;await setS({phase:'lobby'})},
+  await deleteDoc(D('game/results'));cfDone=false;await setS({phase:'lobby',revealStep:0})},
  login,out:()=>signOut(auth)};
 
 function render(){
  const a=document.activeElement;if(me&&a&&['ai','pr','ch','im'].includes(a.id))return;
  if(!me){$('app').innerHTML=`<div class="card c"><h1>🎮 AI CHALLENGE</h1><input id="u" placeholder="Username"><input id="p" type="password" placeholder="Password"><button class="y" onclick="A.login()">LOGIN</button><div id="err" class="mut"></div></div>`;return}
- $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v6 · fullscreen</div></div>`;
- if(me.owner&&S.phase==='lobby'&&$('qr')&&!$('qr').firstChild)new QRCode($('qr'),{text:location.href,width:180,height:180});updFS()}
+ $('app').innerHTML=`<h1 class="c">🎮 AI CHALLENGE</h1>${screen()}${me.owner?admin():leader()}<div class="c"><button class="g" onclick="A.out()">Гарах (${me.name})</button><div class="mut" style="font-size:12px">хувилбар v7 · fullscreen</div></div>`;
+ if(me.owner&&S.phase==='lobby'&&$('qr')&&!$('qr').firstChild)new QRCode($('qr'),{text:location.href,width:180,height:180});updFS();if(S.phase!=='results')cfDone=false;else if(R&&(S.revealStep||0)>=R.rank.length&&!cfDone){cfDone=true;confetti()}}
 </script></body></html>
